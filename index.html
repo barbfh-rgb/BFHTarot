@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en" class="bfh-locked">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BFH Muse Tarot Reel Chooser</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #062522;
+      --panel: #0d332f;
+      --gold: #d8b66e;
+      --cream: #f8ecd5;
+      --muted: #b8aa8c;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 50% 0%, #16443e 0, var(--bg) 42rem);
+      color: var(--cream);
+      min-height: 100vh;
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 22px;
+    }
+    h1 {
+      font-size: 28px;
+      line-height: 1.05;
+      margin: 0 0 18px;
+      color: var(--gold);
+      letter-spacing: 0;
+    }
+    .controls, .preview {
+      border: 1px solid rgba(216, 182, 110, .35);
+      background: rgba(8, 42, 38, .88);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    label { display: block; color: var(--muted); font-size: 14px; margin: 14px 0 7px; }
+    select, button {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid rgba(216, 182, 110, .55);
+      background: #09201e;
+      color: var(--cream);
+      padding: 11px 12px;
+      font: inherit;
+    }
+    .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    button { cursor: pointer; color: #061c1a; background: var(--gold); font-weight: 700; }
+    button.secondary { background: transparent; color: var(--gold); }
+    .spread { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .spread button[aria-pressed="true"] { background: var(--gold); color: #061c1a; }
+    .spread button[aria-pressed="false"] { background: transparent; color: var(--gold); }
+    canvas {
+      width: min(100%, 420px);
+      aspect-ratio: 9 / 16;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid rgba(216, 182, 110, .35);
+      background: #062522;
+    }
+    .grid {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      gap: 12px;
+    }
+    .card-tile {
+      border: 1px solid rgba(216, 182, 110, .25);
+      border-radius: 7px;
+      padding: 6px;
+      background: rgba(9, 32, 30, .8);
+      color: var(--cream);
+      min-height: 178px;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.15;
+    }
+    .card-tile img { width: 100%; display: block; border-radius: 4px; margin-bottom: 6px; }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+    }
+  
+    html.bfh-locked body > main { display: none !important; }
+    html.bfh-locked, html.bfh-locked body { overflow: hidden; }
+    #bfh-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      display: grid; place-items: center; padding: 24px;
+      background: radial-gradient(circle at 50% 12%, #16443e 0, #062522 38rem);
+    }
+    #bfh-gate-form {
+      width: min(100%, 360px); text-align: center;
+      border: 1px solid rgba(216, 182, 110, .35);
+      background: rgba(8, 42, 38, .92);
+      border-radius: 10px; padding: 34px 26px 28px;
+    }
+    .bfh-gate-mark {
+      margin: 0 0 14px; letter-spacing: .38em; text-indent: .38em;
+      font-size: 13px; color: var(--gold); opacity: .8;
+    }
+    #bfh-gate h1 { font-size: 26px; margin: 0 0 10px; color: var(--gold); }
+    .bfh-gate-sub { margin: 0 0 20px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+    #bfh-gate input {
+      width: 100%; border-radius: 6px; padding: 12px;
+      border: 1px solid rgba(216, 182, 110, .55);
+      background: #09201e; color: var(--cream); font: inherit;
+      text-align: center; letter-spacing: .12em;
+    }
+    #bfh-gate button {
+      width: 100%; margin-top: 12px; border-radius: 6px; padding: 12px;
+      border: 1px solid rgba(216, 182, 110, .55);
+      background: var(--gold); color: #061c1a; font: inherit; font-weight: 700;
+      cursor: pointer;
+    }
+    .bfh-gate-error { margin: 14px 0 0; font-size: 13px; color: #f0b6a4; }
+  </style>
+</head>
+<body>
+
+  <div id="bfh-gate" role="dialog" aria-modal="true" aria-labelledby="bfh-gate-title">
+    <form id="bfh-gate-form" autocomplete="off">
+      <p class="bfh-gate-mark">BFH</p>
+      <h1 id="bfh-gate-title">BFH Muse Tarot</h1>
+      <p class="bfh-gate-sub">This deck is private. Enter the passcode to continue.</p>
+      <input id="bfh-gate-input" type="password" inputmode="text" autocomplete="off"
+             placeholder="Passcode" aria-label="Passcode" spellcheck="false">
+      <button type="submit">Enter</button>
+      <p class="bfh-gate-error" id="bfh-gate-error" role="alert" hidden>That passcode isn't right. Try again.</p>
+    </form>
+  </div>
+  <script>
+  (function () {
+    var HASH = "dcedc53848aa73858884c5dd5f496592f68d1d129dfcc9adf4f3ecb3a973c5f6";
+    var KEY = "bfh-muse-tarot-unlocked";
+    var gate = document.getElementById("bfh-gate");
+    var form = document.getElementById("bfh-gate-form");
+    var input = document.getElementById("bfh-gate-input");
+    var err = document.getElementById("bfh-gate-error");
+
+    function unlock() {
+      document.documentElement.classList.remove("bfh-locked");
+      gate.remove();
+    }
+    async function sha256(text) {
+      var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(function (b) {
+        return b.toString(16).padStart(2, "0");
+      }).join("");
+    }
+    try {
+      if (localStorage.getItem(KEY) === HASH) { unlock(); return; }
+    } catch (e) {}
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var value = input.value.trim();
+      var digest = "";
+      try {
+        digest = await sha256(value);
+      } catch (e2) {
+        digest = "";
+      }
+      if (digest === HASH) {
+        try { localStorage.setItem(KEY, HASH); } catch (e3) {}
+        unlock();
+      } else {
+        err.hidden = false;
+        input.value = "";
+        input.focus();
+      }
+    });
+    input.focus();
+  })();
+  </script>
+
+  <main>
+    <section class="controls">
+      <h1>BFH Muse Tarot</h1>
+      <div class="spread">
+        <button id="singleBtn" aria-pressed="true" type="button">1 card</button>
+        <button id="doubleBtn" aria-pressed="false" type="button">2 cards</button>
+      </div>
+      <label for="card1">First card</label>
+      <select id="card1"></select>
+      <label for="card2" id="card2Label">Second card</label>
+      <select id="card2"></select>
+      <div class="buttons">
+        <button type="button" id="randomBtn" class="secondary">Random</button>
+        <button type="button" id="downloadBtn">Download</button>
+      </div>
+    </section>
+    <section class="preview">
+      <canvas id="canvas" width="1080" height="1920"></canvas>
+    </section>
+    <section class="grid" id="grid"></section>
+  </main>
+  <script>
+    const cards = [
+  {
+    "slug": "00-the-fool",
+    "name": "The Fool",
+    "group": "major",
+    "file": "cards/00-the-fool.png",
+    "thumb": "thumbs/00-the-fool.jpg"
+  },
+  {
+    "slug": "01-the-magician",
+    "name": "The Magician",
+    "group": "major",
+    "file": "cards/01-the-magician.png",
+    "thumb": "thumbs/01-the-magician.jpg"
+  },
+  {
+    "slug": "02-the-high-priestess",
+    "name": "The High Priestess",
+    "group": "major",
+    "file": "cards/02-the-high-priestess.png",
+    "thumb": "thumbs/02-the-high-priestess.jpg"
+  },
+  {
+    "slug": "03-the-empress",
+    "name": "The Empress",
+    "group": "major",
+    "file": "cards/03-the-empress.png",
+    "thumb": "thumbs/03-the-empress.jpg"
+  },
+  {
+    "slug": "04-the-emperor",
+    "name": "The Emperor",
+    "group": "major",
+    "file": "cards/04-the-emperor.png",
+    "thumb": "thumbs/04-the-emperor.jpg"
+  },
+  {
+    "slug": "05-the-hierophant",
+    "name": "The Hierophant",
+    "group": "major",
+    "file": "cards/05-the-hierophant.png",
+    "thumb": "thumbs/05-the-hierophant.jpg"
+  },
+  {
+    "slug": "06-the-lovers",
+    "name": "The Lovers",
+    "group": "major",
+    "file": "cards/06-the-lovers.png",
+    "thumb": "thumbs/06-the-lovers.jpg"
+  },
+  {
+    "slug": "07-the-chariot",
+    "name": "The Chariot",
+    "group": "major",
+    "file": "cards/07-the-chariot.png",
+    "thumb": "thumbs/07-the-chariot.jpg"
+  },
+  {
+    "slug": "08-strength",
+    "name": "Strength",
+    "group": "major",
+    "file": "cards/08-strength.png",
+    "thumb": "thumbs/08-strength.jpg"
+  },
+  {
+    "slug": "09-the-hermit",
+    "name": "The Hermit",
+    "group": "major",
+    "file": "cards/09-the-hermit.png",
+    "thumb": "thumbs/09-the-hermit.jpg"
+  },
+  {
+    "slug": "10-wheel-of-fortune",
+    "name": "Wheel of Fortune",
+    "group": "major",
+    "file": "cards/10-wheel-of-fortune.png",
+    "thumb": "thumbs/10-wheel-of-fortune.jpg"
+  },
+  {
+    "slug": "11-justice",
+    "name": "Justice",
+    "group": "major",
+    "file": "cards/11-justice.png",
+    "thumb": "thumbs/11-justice.jpg"
+  },
+  {
+    "slug": "12-the-hanged-one",
+    "name": "The Hanged One",
+    "group": "major",
+    "file": "cards/12-the-hanged-one.png",
+    "thumb": "thumbs/12-the-hanged-one.jpg"
+  },
+  {
+    "slug": "13-death",
+    "name": "Death",
+    "group": "major",
+    "file": "cards/13-death.png",
+    "thumb": "thumbs/13-death.jpg"
+  },
+  {
+    "slug": "14-temperance",
+    "name": "Temperance",
+    "group": "major",
+    "file": "cards/14-temperance.png",
+    "thumb": "thumbs/14-temperance.jpg"
+  },
+  {
+    "slug": "15-the-devil",
+    "name": "The Devil",
+    "group": "major",
+    "file": "cards/15-the-devil.png",
+    "thumb": "thumbs/15-the-devil.jpg"
+  },
+  {
+    "slug": "16-the-tower",
+    "name": "The Tower",
+    "group": "major",
+    "file": "cards/16-the-tower.png",
+    "thumb": "thumbs/16-the-tower.jpg"
+  },
+  {
+    "slug": "17-the-star",
+    "name": "The Star",
+    "group": "major",
+    "file": "cards/17-the-star.png",
+    "thumb": "thumbs/17-the-star.jpg"
+  },
+  {
+    "slug": "18-the-moon",
+    "name": "The Moon",
+    "group": "major",
+    "file": "cards/18-the-moon.png",
+    "thumb": "thumbs/18-the-moon.jpg"
+  },
+  {
+    "slug": "19-the-sun",
+    "name": "The Sun",
+    "group": "major",
+    "file": "cards/19-the-sun.png",
+    "thumb": "thumbs/19-the-sun.jpg"
+  },
+  {
+    "slug": "20-judgement",
+    "name": "Judgement",
+    "group": "major",
+    "file": "cards/20-judgement.png",
+    "thumb": "thumbs/20-judgement.jpg"
+  },
+  {
+    "slug": "21-the-world",
+    "name": "The World",
+    "group": "major",
+    "file": "cards/21-the-world.png",
+    "thumb": "thumbs/21-the-world.jpg"
+  },
+  {
+    "slug": "ace-of-wands",
+    "name": "Ace of Wands",
+    "group": "wands",
+    "file": "cards/ace-of-wands.png",
+    "thumb": "thumbs/ace-of-wands.jpg"
+  },
+  {
+    "slug": "two-of-wands",
+    "name": "Two of Wands",
+    "group": "wands",
+    "file": "cards/two-of-wands.png",
+    "thumb": "thumbs/two-of-wands.jpg"
+  },
+  {
+    "slug": "three-of-wands",
+    "name": "Three of Wands",
+    "group": "wands",
+    "file": "cards/three-of-wands.png",
+    "thumb": "thumbs/three-of-wands.jpg"
+  },
+  {
+    "slug": "four-of-wands",
+    "name": "Four of Wands",
+    "group": "wands",
+    "file": "cards/four-of-wands.png",
+    "thumb": "thumbs/four-of-wands.jpg"
+  },
+  {
+    "slug": "five-of-wands",
+    "name": "Five of Wands",
+    "group": "wands",
+    "file": "cards/five-of-wands.png",
+    "thumb": "thumbs/five-of-wands.jpg"
+  },
+  {
+    "slug": "six-of-wands",
+    "name": "Six of Wands",
+    "group": "wands",
+    "file": "cards/six-of-wands.png",
+    "thumb": "thumbs/six-of-wands.jpg"
+  },
+  {
+    "slug": "seven-of-wands",
+    "name": "Seven of Wands",
+    "group": "wands",
+    "file": "cards/seven-of-wands.png",
+    "thumb": "thumbs/seven-of-wands.jpg"
+  },
+  {
+    "slug": "eight-of-wands",
+    "name": "Eight of Wands",
+    "group": "wands",
+    "file": "cards/eight-of-wands.png",
+    "thumb": "thumbs/eight-of-wands.jpg"
+  },
+  {
+    "slug": "nine-of-wands",
+    "name": "Nine of Wands",
+    "group": "wands",
+    "file": "cards/nine-of-wands.png",
+    "thumb": "thumbs/nine-of-wands.jpg"
+  },
+  {
+    "slug": "ten-of-wands",
+    "name": "Ten of Wands",
+    "group": "wands",
+    "file": "cards/ten-of-wands.png",
+    "thumb": "thumbs/ten-of-wands.jpg"
+  },
+  {
+    "slug": "page-of-wands",
+    "name": "Page of Wands",
+    "group": "wands",
+    "file": "cards/page-of-wands.png",
+    "thumb": "thumbs/page-of-wands.jpg"
+  },
+  {
+    "slug": "knight-of-wands",
+    "name": "Knight of Wands",
+    "group": "wands",
+    "file": "cards/knight-of-wands.png",
+    "thumb": "thumbs/knight-of-wands.jpg"
+  },
+  {
+    "slug": "queen-of-wands",
+    "name": "Queen of Wands",
+    "group": "wands",
+    "file": "cards/queen-of-wands.png",
+    "thumb": "thumbs/queen-of-wands.jpg"
+  },
+  {
+    "slug": "king-of-wands",
+    "name": "King of Wands",
+    "group": "wands",
+    "file": "cards/king-of-wands.png",
+    "thumb": "thumbs/king-of-wands.jpg"
+  },
+  {
+    "slug": "ace-of-cups",
+    "name": "Ace of Cups",
+    "group": "cups",
+    "file": "cards/ace-of-cups.png",
+    "thumb": "thumbs/ace-of-cups.jpg"
+  },
+  {
+    "slug": "two-of-cups",
+    "name": "Two of Cups",
+    "group": "cups",
+    "file": "cards/two-of-cups.png",
+    "thumb": "thumbs/two-of-cups.jpg"
+  },
+  {
+    "slug": "three-of-cups",
+    "name": "Three of Cups",
+    "group": "cups",
+    "file": "cards/three-of-cups.png",
+    "thumb": "thumbs/three-of-cups.jpg"
+  },
+  {
+    "slug": "four-of-cups",
+    "name": "Four of Cups",
+    "group": "cups",
+    "file": "cards/four-of-cups.png",
+    "thumb": "thumbs/four-of-cups.jpg"
+  },
+  {
+    "slug": "five-of-cups",
+    "name": "Five of Cups",
+    "group": "cups",
+    "file": "cards/five-of-cups.png",
+    "thumb": "thumbs/five-of-cups.jpg"
+  },
+  {
+    "slug": "six-of-cups",
+    "name": "Six of Cups",
+    "group": "cups",
+    "file": "cards/six-of-cups.png",
+    "thumb": "thumbs/six-of-cups.jpg"
+  },
+  {
+    "slug": "seven-of-cups",
+    "name": "Seven of Cups",
+    "group": "cups",
+    "file": "cards/seven-of-cups.png",
+    "thumb": "thumbs/seven-of-cups.jpg"
+  },
+  {
+    "slug": "eight-of-cups",
+    "name": "Eight of Cups",
+    "group": "cups",
+    "file": "cards/eight-of-cups.png",
+    "thumb": "thumbs/eight-of-cups.jpg"
+  },
+  {
+    "slug": "nine-of-cups",
+    "name": "Nine of Cups",
+    "group": "cups",
+    "file": "cards/nine-of-cups.png",
+    "thumb": "thumbs/nine-of-cups.jpg"
+  },
+  {
+    "slug": "ten-of-cups",
+    "name": "Ten of Cups",
+    "group": "cups",
+    "file": "cards/ten-of-cups.png",
+    "thumb": "thumbs/ten-of-cups.jpg"
+  },
+  {
+    "slug": "page-of-cups",
+    "name": "Page of Cups",
+    "group": "cups",
+    "file": "cards/page-of-cups.png",
+    "thumb": "thumbs/page-of-cups.jpg"
+  },
+  {
+    "slug": "knight-of-cups",
+    "name": "Knight of Cups",
+    "group": "cups",
+    "file": "cards/knight-of-cups.png",
+    "thumb": "thumbs/knight-of-cups.jpg"
+  },
+  {
+    "slug": "queen-of-cups",
+    "name": "Queen of Cups",
+    "group": "cups",
+    "file": "cards/queen-of-cups.png",
+    "thumb": "thumbs/queen-of-cups.jpg"
+  },
+  {
+    "slug": "king-of-cups",
+    "name": "King of Cups",
+    "group": "cups",
+    "file": "cards/king-of-cups.png",
+    "thumb": "thumbs/king-of-cups.jpg"
+  },
+  {
+    "slug": "ace-of-swords",
+    "name": "Ace of Swords",
+    "group": "swords",
+    "file": "cards/ace-of-swords.png",
+    "thumb": "thumbs/ace-of-swords.jpg"
+  },
+  {
+    "slug": "two-of-swords",
+    "name": "Two of Swords",
+    "group": "swords",
+    "file": "cards/two-of-swords.png",
+    "thumb": "thumbs/two-of-swords.jpg"
+  },
+  {
+    "slug": "three-of-swords",
+    "name": "Three of Swords",
+    "group": "swords",
+    "file": "cards/three-of-swords.png",
+    "thumb": "thumbs/three-of-swords.jpg"
+  },
+  {
+    "slug": "four-of-swords",
+    "name": "Four of Swords",
+    "group": "swords",
+    "file": "cards/four-of-swords.png",
+    "thumb": "thumbs/four-of-swords.jpg"
+  },
+  {
+    "slug": "five-of-swords",
+    "name": "Five of Swords",
+    "group": "swords",
+    "file": "cards/five-of-swords.png",
+    "thumb": "thumbs/five-of-swords.jpg"
+  },
+  {
+    "slug": "six-of-swords",
+    "name": "Six of Swords",
+    "group": "swords",
+    "file": "cards/six-of-swords.png",
+    "thumb": "thumbs/six-of-swords.jpg"
+  },
+  {
+    "slug": "seven-of-swords",
+    "name": "Seven of Swords",
+    "group": "swords",
+    "file": "cards/seven-of-swords.png",
+    "thumb": "thumbs/seven-of-swords.jpg"
+  },
+  {
+    "slug": "eight-of-swords",
+    "name": "Eight of Swords",
+    "group": "swords",
+    "file": "cards/eight-of-swords.png",
+    "thumb": "thumbs/eight-of-swords.jpg"
+  },
+  {
+    "slug": "nine-of-swords",
+    "name": "Nine of Swords",
+    "group": "swords",
+    "file": "cards/nine-of-swords.png",
+    "thumb": "thumbs/nine-of-swords.jpg"
+  },
+  {
+    "slug": "ten-of-swords",
+    "name": "Ten of Swords",
+    "group": "swords",
+    "file": "cards/ten-of-swords.png",
+    "thumb": "thumbs/ten-of-swords.jpg"
+  },
+  {
+    "slug": "page-of-swords",
+    "name": "Page of Swords",
+    "group": "swords",
+    "file": "cards/page-of-swords.png",
+    "thumb": "thumbs/page-of-swords.jpg"
+  },
+  {
+    "slug": "knight-of-swords",
+    "name": "Knight of Swords",
+    "group": "swords",
+    "file": "cards/knight-of-swords.png",
+    "thumb": "thumbs/knight-of-swords.jpg"
+  },
+  {
+    "slug": "queen-of-swords",
+    "name": "Queen of Swords",
+    "group": "swords",
+    "file": "cards/queen-of-swords.png",
+    "thumb": "thumbs/queen-of-swords.jpg"
+  },
+  {
+    "slug": "king-of-swords",
+    "name": "King of Swords",
+    "group": "swords",
+    "file": "cards/king-of-swords.png",
+    "thumb": "thumbs/king-of-swords.jpg"
+  },
+  {
+    "slug": "ace-of-pentacles",
+    "name": "Ace of Pentacles",
+    "group": "pentacles",
+    "file": "cards/ace-of-pentacles.png",
+    "thumb": "thumbs/ace-of-pentacles.jpg"
+  },
+  {
+    "slug": "two-of-pentacles",
+    "name": "Two of Pentacles",
+    "group": "pentacles",
+    "file": "cards/two-of-pentacles.png",
+    "thumb": "thumbs/two-of-pentacles.jpg"
+  },
+  {
+    "slug": "three-of-pentacles",
+    "name": "Three of Pentacles",
+    "group": "pentacles",
+    "file": "cards/three-of-pentacles.png",
+    "thumb": "thumbs/three-of-pentacles.jpg"
+  },
+  {
+    "slug": "four-of-pentacles",
+    "name": "Four of Pentacles",
+    "group": "pentacles",
+    "file": "cards/four-of-pentacles.png",
+    "thumb": "thumbs/four-of-pentacles.jpg"
+  },
+  {
+    "slug": "five-of-pentacles",
+    "name": "Five of Pentacles",
+    "group": "pentacles",
+    "file": "cards/five-of-pentacles.png",
+    "thumb": "thumbs/five-of-pentacles.jpg"
+  },
+  {
+    "slug": "six-of-pentacles",
+    "name": "Six of Pentacles",
+    "group": "pentacles",
+    "file": "cards/six-of-pentacles.png",
+    "thumb": "thumbs/six-of-pentacles.jpg"
+  },
+  {
+    "slug": "seven-of-pentacles",
+    "name": "Seven of Pentacles",
+    "group": "pentacles",
+    "file": "cards/seven-of-pentacles.png",
+    "thumb": "thumbs/seven-of-pentacles.jpg"
+  },
+  {
+    "slug": "eight-of-pentacles",
+    "name": "Eight of Pentacles",
+    "group": "pentacles",
+    "file": "cards/eight-of-pentacles.png",
+    "thumb": "thumbs/eight-of-pentacles.jpg"
+  },
+  {
+    "slug": "nine-of-pentacles",
+    "name": "Nine of Pentacles",
+    "group": "pentacles",
+    "file": "cards/nine-of-pentacles.png",
+    "thumb": "thumbs/nine-of-pentacles.jpg"
+  },
+  {
+    "slug": "ten-of-pentacles",
+    "name": "Ten of Pentacles",
+    "group": "pentacles",
+    "file": "cards/ten-of-pentacles.png",
+    "thumb": "thumbs/ten-of-pentacles.jpg"
+  },
+  {
+    "slug": "page-of-pentacles",
+    "name": "Page of Pentacles",
+    "group": "pentacles",
+    "file": "cards/page-of-pentacles.png",
+    "thumb": "thumbs/page-of-pentacles.jpg"
+  },
+  {
+    "slug": "knight-of-pentacles",
+    "name": "Knight of Pentacles",
+    "group": "pentacles",
+    "file": "cards/knight-of-pentacles.png",
+    "thumb": "thumbs/knight-of-pentacles.jpg"
+  },
+  {
+    "slug": "queen-of-pentacles",
+    "name": "Queen of Pentacles",
+    "group": "pentacles",
+    "file": "cards/queen-of-pentacles.png",
+    "thumb": "thumbs/queen-of-pentacles.jpg"
+  },
+  {
+    "slug": "king-of-pentacles",
+    "name": "King of Pentacles",
+    "group": "pentacles",
+    "file": "cards/king-of-pentacles.png",
+    "thumb": "thumbs/king-of-pentacles.jpg"
+  }
+];
+    const card1 = document.querySelector("#card1");
+    const card2 = document.querySelector("#card2");
+    const card2Label = document.querySelector("#card2Label");
+    const singleBtn = document.querySelector("#singleBtn");
+    const doubleBtn = document.querySelector("#doubleBtn");
+    const randomBtn = document.querySelector("#randomBtn");
+    const downloadBtn = document.querySelector("#downloadBtn");
+    const canvas = document.querySelector("#canvas");
+    const ctx = canvas.getContext("2d");
+    let spread = 1;
+
+    function option(card) {
+      const opt = document.createElement("option");
+      opt.value = card.file;
+      opt.textContent = card.name;
+      return opt;
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function fillSelects() {
+      cards.forEach(card => {
+        card1.append(option(card));
+        card2.append(option(card));
+      });
+      card2.selectedIndex = 1;
+    }
+
+    function setSpread(next) {
+      spread = next;
+      singleBtn.setAttribute("aria-pressed", String(next === 1));
+      doubleBtn.setAttribute("aria-pressed", String(next === 2));
+      card2.hidden = next === 1;
+      card2Label.hidden = next === 1;
+      draw();
+    }
+
+    function drawFrame() {
+      const grad = ctx.createRadialGradient(540, 120, 20, 540, 900, 1250);
+      grad.addColorStop(0, "#16443e");
+      grad.addColorStop(1, "#062522");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1080, 1920);
+      ctx.strokeStyle = "rgba(216,182,110,.62)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(54, 54, 972, 1812);
+      ctx.strokeStyle = "rgba(216,182,110,.28)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(78, 78, 924, 1764);
+    }
+
+    function drawCard(img, x, y, w, h) {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.55)";
+      ctx.shadowBlur = 34;
+      ctx.shadowOffsetY = 20;
+      ctx.drawImage(img, x, y, w, h);
+      ctx.restore();
+    }
+
+    async function draw() {
+      drawFrame();
+      const first = await loadImage(card1.value);
+      if (spread === 1) {
+        drawCard(first, 200, 310, 680, 1156);
+      } else {
+        const second = await loadImage(card2.value);
+        drawCard(first, 92, 555, 430, 731);
+        drawCard(second, 558, 555, 430, 731);
+      }
+    }
+
+    function randomise() {
+      card1.selectedIndex = Math.floor(Math.random() * cards.length);
+      card2.selectedIndex = Math.floor(Math.random() * cards.length);
+      if (spread === 2 && card1.selectedIndex === card2.selectedIndex) {
+        card2.selectedIndex = (card2.selectedIndex + 1) % cards.length;
+      }
+      draw();
+    }
+
+    function download() {
+      const names = [card1.options[card1.selectedIndex].textContent];
+      if (spread === 2) names.push(card2.options[card2.selectedIndex].textContent);
+      const a = document.createElement("a");
+      a.download = names.join("-").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + ".png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    }
+
+    function makeGrid() {
+      const grid = document.querySelector("#grid");
+      cards.forEach(card => {
+        const button = document.createElement("button");
+        button.className = "card-tile";
+        button.type = "button";
+        button.innerHTML = `<img src="${card.thumb}" alt="">${card.name}`;
+        button.addEventListener("click", () => {
+          card1.value = card.file;
+          draw();
+          scrollTo({ top: 0, behavior: "smooth" });
+        });
+        grid.append(button);
+      });
+    }
+
+    singleBtn.addEventListener("click", () => setSpread(1));
+    doubleBtn.addEventListener("click", () => setSpread(2));
+    randomBtn.addEventListener("click", randomise);
+    downloadBtn.addEventListener("click", download);
+    card1.addEventListener("change", draw);
+    card2.addEventListener("change", draw);
+
+    fillSelects();
+    makeGrid();
+    setSpread(1);
+  </script>
+</body>
+</html>
