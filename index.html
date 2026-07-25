@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BFH Muse Tarot Reel Chooser</title>
+  <title>BFH Muse Tarot</title>
   <style>
     :root {
       color-scheme: dark;
@@ -34,7 +34,6 @@
       line-height: 1.05;
       margin: 0 0 18px;
       color: var(--gold);
-      letter-spacing: 0;
     }
     .controls, .preview {
       border: 1px solid rgba(216, 182, 110, .35);
@@ -55,7 +54,7 @@
     .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
     button { cursor: pointer; color: #061c1a; background: var(--gold); font-weight: 700; }
     button.secondary { background: transparent; color: var(--gold); }
-    .spread { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .spread { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
     .spread button[aria-pressed="true"] { background: var(--gold); color: #061c1a; }
     .spread button[aria-pressed="false"] { background: transparent; color: var(--gold); }
     canvas {
@@ -88,7 +87,7 @@
       main { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
     }
-  
+
     html.bfh-locked body > main { display: none !important; }
     html.bfh-locked, html.bfh-locked body { overflow: hidden; }
     #bfh-gate {
@@ -124,7 +123,6 @@
   </style>
 </head>
 <body>
-
   <div id="bfh-gate" role="dialog" aria-modal="true" aria-labelledby="bfh-gate-title">
     <form id="bfh-gate-form" autocomplete="off">
       <p class="bfh-gate-mark">BFH</p>
@@ -163,11 +161,7 @@
       e.preventDefault();
       var value = input.value.trim();
       var digest = "";
-      try {
-        digest = await sha256(value);
-      } catch (e2) {
-        digest = "";
-      }
+      try { digest = await sha256(value); } catch (e2) { digest = ""; }
       if (digest === HASH) {
         try { localStorage.setItem(KEY, HASH); } catch (e3) {}
         unlock();
@@ -185,13 +179,11 @@
     <section class="controls">
       <h1>BFH Muse Tarot</h1>
       <div class="spread">
-        <button id="singleBtn" aria-pressed="true" type="button">1 card</button>
-        <button id="doubleBtn" aria-pressed="false" type="button">2 cards</button>
+        <button data-count="1" aria-pressed="true" type="button">1 card</button>
+        <button data-count="3" aria-pressed="false" type="button">3 cards</button>
+        <button data-count="5" aria-pressed="false" type="button">5 cards</button>
       </div>
-      <label for="card1">First card</label>
-      <select id="card1"></select>
-      <label for="card2" id="card2Label">Second card</label>
-      <select id="card2"></select>
+      <div id="selectors"></div>
       <div class="buttons">
         <button type="button" id="randomBtn" class="secondary">Random</button>
         <button type="button" id="downloadBtn">Download</button>
@@ -202,678 +194,317 @@
     </section>
     <section class="grid" id="grid"></section>
   </main>
+
   <script>
-    const cards = [
-  {
-    "slug": "00-the-fool",
-    "name": "The Fool",
-    "group": "major",
-    "file": "cards/00-the-fool.png",
-    "thumb": "thumbs/00-the-fool.jpg"
-  },
-  {
-    "slug": "01-the-magician",
-    "name": "The Magician",
-    "group": "major",
-    "file": "cards/01-the-magician.png",
-    "thumb": "thumbs/01-the-magician.jpg"
-  },
-  {
-    "slug": "02-the-high-priestess",
-    "name": "The High Priestess",
-    "group": "major",
-    "file": "cards/02-the-high-priestess.png",
-    "thumb": "thumbs/02-the-high-priestess.jpg"
-  },
-  {
-    "slug": "03-the-empress",
-    "name": "The Empress",
-    "group": "major",
-    "file": "cards/03-the-empress.png",
-    "thumb": "thumbs/03-the-empress.jpg"
-  },
-  {
-    "slug": "04-the-emperor",
-    "name": "The Emperor",
-    "group": "major",
-    "file": "cards/04-the-emperor.png",
-    "thumb": "thumbs/04-the-emperor.jpg"
-  },
-  {
-    "slug": "05-the-hierophant",
-    "name": "The Hierophant",
-    "group": "major",
-    "file": "cards/05-the-hierophant.png",
-    "thumb": "thumbs/05-the-hierophant.jpg"
-  },
-  {
-    "slug": "06-the-lovers",
-    "name": "The Lovers",
-    "group": "major",
-    "file": "cards/06-the-lovers.png",
-    "thumb": "thumbs/06-the-lovers.jpg"
-  },
-  {
-    "slug": "07-the-chariot",
-    "name": "The Chariot",
-    "group": "major",
-    "file": "cards/07-the-chariot.png",
-    "thumb": "thumbs/07-the-chariot.jpg"
-  },
-  {
-    "slug": "08-strength",
-    "name": "Strength",
-    "group": "major",
-    "file": "cards/08-strength.png",
-    "thumb": "thumbs/08-strength.jpg"
-  },
-  {
-    "slug": "09-the-hermit",
-    "name": "The Hermit",
-    "group": "major",
-    "file": "cards/09-the-hermit.png",
-    "thumb": "thumbs/09-the-hermit.jpg"
-  },
-  {
-    "slug": "10-wheel-of-fortune",
-    "name": "Wheel of Fortune",
-    "group": "major",
-    "file": "cards/10-wheel-of-fortune.png",
-    "thumb": "thumbs/10-wheel-of-fortune.jpg"
-  },
-  {
-    "slug": "11-justice",
-    "name": "Justice",
-    "group": "major",
-    "file": "cards/11-justice.png",
-    "thumb": "thumbs/11-justice.jpg"
-  },
-  {
-    "slug": "12-the-hanged-one",
-    "name": "The Hanged One",
-    "group": "major",
-    "file": "cards/12-the-hanged-one.png",
-    "thumb": "thumbs/12-the-hanged-one.jpg"
-  },
-  {
-    "slug": "13-death",
-    "name": "Death",
-    "group": "major",
-    "file": "cards/13-death.png",
-    "thumb": "thumbs/13-death.jpg"
-  },
-  {
-    "slug": "14-temperance",
-    "name": "Temperance",
-    "group": "major",
-    "file": "cards/14-temperance.png",
-    "thumb": "thumbs/14-temperance.jpg"
-  },
-  {
-    "slug": "15-the-devil",
-    "name": "The Devil",
-    "group": "major",
-    "file": "cards/15-the-devil.png",
-    "thumb": "thumbs/15-the-devil.jpg"
-  },
-  {
-    "slug": "16-the-tower",
-    "name": "The Tower",
-    "group": "major",
-    "file": "cards/16-the-tower.png",
-    "thumb": "thumbs/16-the-tower.jpg"
-  },
-  {
-    "slug": "17-the-star",
-    "name": "The Star",
-    "group": "major",
-    "file": "cards/17-the-star.png",
-    "thumb": "thumbs/17-the-star.jpg"
-  },
-  {
-    "slug": "18-the-moon",
-    "name": "The Moon",
-    "group": "major",
-    "file": "cards/18-the-moon.png",
-    "thumb": "thumbs/18-the-moon.jpg"
-  },
-  {
-    "slug": "19-the-sun",
-    "name": "The Sun",
-    "group": "major",
-    "file": "cards/19-the-sun.png",
-    "thumb": "thumbs/19-the-sun.jpg"
-  },
-  {
-    "slug": "20-judgement",
-    "name": "Judgement",
-    "group": "major",
-    "file": "cards/20-judgement.png",
-    "thumb": "thumbs/20-judgement.jpg"
-  },
-  {
-    "slug": "21-the-world",
-    "name": "The World",
-    "group": "major",
-    "file": "cards/21-the-world.png",
-    "thumb": "thumbs/21-the-world.jpg"
-  },
-  {
-    "slug": "ace-of-wands",
-    "name": "Ace of Wands",
-    "group": "wands",
-    "file": "cards/ace-of-wands.png",
-    "thumb": "thumbs/ace-of-wands.jpg"
-  },
-  {
-    "slug": "two-of-wands",
-    "name": "Two of Wands",
-    "group": "wands",
-    "file": "cards/two-of-wands.png",
-    "thumb": "thumbs/two-of-wands.jpg"
-  },
-  {
-    "slug": "three-of-wands",
-    "name": "Three of Wands",
-    "group": "wands",
-    "file": "cards/three-of-wands.png",
-    "thumb": "thumbs/three-of-wands.jpg"
-  },
-  {
-    "slug": "four-of-wands",
-    "name": "Four of Wands",
-    "group": "wands",
-    "file": "cards/four-of-wands.png",
-    "thumb": "thumbs/four-of-wands.jpg"
-  },
-  {
-    "slug": "five-of-wands",
-    "name": "Five of Wands",
-    "group": "wands",
-    "file": "cards/five-of-wands.png",
-    "thumb": "thumbs/five-of-wands.jpg"
-  },
-  {
-    "slug": "six-of-wands",
-    "name": "Six of Wands",
-    "group": "wands",
-    "file": "cards/six-of-wands.png",
-    "thumb": "thumbs/six-of-wands.jpg"
-  },
-  {
-    "slug": "seven-of-wands",
-    "name": "Seven of Wands",
-    "group": "wands",
-    "file": "cards/seven-of-wands.png",
-    "thumb": "thumbs/seven-of-wands.jpg"
-  },
-  {
-    "slug": "eight-of-wands",
-    "name": "Eight of Wands",
-    "group": "wands",
-    "file": "cards/eight-of-wands.png",
-    "thumb": "thumbs/eight-of-wands.jpg"
-  },
-  {
-    "slug": "nine-of-wands",
-    "name": "Nine of Wands",
-    "group": "wands",
-    "file": "cards/nine-of-wands.png",
-    "thumb": "thumbs/nine-of-wands.jpg"
-  },
-  {
-    "slug": "ten-of-wands",
-    "name": "Ten of Wands",
-    "group": "wands",
-    "file": "cards/ten-of-wands.png",
-    "thumb": "thumbs/ten-of-wands.jpg"
-  },
-  {
-    "slug": "page-of-wands",
-    "name": "Page of Wands",
-    "group": "wands",
-    "file": "cards/page-of-wands.png",
-    "thumb": "thumbs/page-of-wands.jpg"
-  },
-  {
-    "slug": "knight-of-wands",
-    "name": "Knight of Wands",
-    "group": "wands",
-    "file": "cards/knight-of-wands.png",
-    "thumb": "thumbs/knight-of-wands.jpg"
-  },
-  {
-    "slug": "queen-of-wands",
-    "name": "Queen of Wands",
-    "group": "wands",
-    "file": "cards/queen-of-wands.png",
-    "thumb": "thumbs/queen-of-wands.jpg"
-  },
-  {
-    "slug": "king-of-wands",
-    "name": "King of Wands",
-    "group": "wands",
-    "file": "cards/king-of-wands.png",
-    "thumb": "thumbs/king-of-wands.jpg"
-  },
-  {
-    "slug": "ace-of-cups",
-    "name": "Ace of Cups",
-    "group": "cups",
-    "file": "cards/ace-of-cups.png",
-    "thumb": "thumbs/ace-of-cups.jpg"
-  },
-  {
-    "slug": "two-of-cups",
-    "name": "Two of Cups",
-    "group": "cups",
-    "file": "cards/two-of-cups.png",
-    "thumb": "thumbs/two-of-cups.jpg"
-  },
-  {
-    "slug": "three-of-cups",
-    "name": "Three of Cups",
-    "group": "cups",
-    "file": "cards/three-of-cups.png",
-    "thumb": "thumbs/three-of-cups.jpg"
-  },
-  {
-    "slug": "four-of-cups",
-    "name": "Four of Cups",
-    "group": "cups",
-    "file": "cards/four-of-cups.png",
-    "thumb": "thumbs/four-of-cups.jpg"
-  },
-  {
-    "slug": "five-of-cups",
-    "name": "Five of Cups",
-    "group": "cups",
-    "file": "cards/five-of-cups.png",
-    "thumb": "thumbs/five-of-cups.jpg"
-  },
-  {
-    "slug": "six-of-cups",
-    "name": "Six of Cups",
-    "group": "cups",
-    "file": "cards/six-of-cups.png",
-    "thumb": "thumbs/six-of-cups.jpg"
-  },
-  {
-    "slug": "seven-of-cups",
-    "name": "Seven of Cups",
-    "group": "cups",
-    "file": "cards/seven-of-cups.png",
-    "thumb": "thumbs/seven-of-cups.jpg"
-  },
-  {
-    "slug": "eight-of-cups",
-    "name": "Eight of Cups",
-    "group": "cups",
-    "file": "cards/eight-of-cups.png",
-    "thumb": "thumbs/eight-of-cups.jpg"
-  },
-  {
-    "slug": "nine-of-cups",
-    "name": "Nine of Cups",
-    "group": "cups",
-    "file": "cards/nine-of-cups.png",
-    "thumb": "thumbs/nine-of-cups.jpg"
-  },
-  {
-    "slug": "ten-of-cups",
-    "name": "Ten of Cups",
-    "group": "cups",
-    "file": "cards/ten-of-cups.png",
-    "thumb": "thumbs/ten-of-cups.jpg"
-  },
-  {
-    "slug": "page-of-cups",
-    "name": "Page of Cups",
-    "group": "cups",
-    "file": "cards/page-of-cups.png",
-    "thumb": "thumbs/page-of-cups.jpg"
-  },
-  {
-    "slug": "knight-of-cups",
-    "name": "Knight of Cups",
-    "group": "cups",
-    "file": "cards/knight-of-cups.png",
-    "thumb": "thumbs/knight-of-cups.jpg"
-  },
-  {
-    "slug": "queen-of-cups",
-    "name": "Queen of Cups",
-    "group": "cups",
-    "file": "cards/queen-of-cups.png",
-    "thumb": "thumbs/queen-of-cups.jpg"
-  },
-  {
-    "slug": "king-of-cups",
-    "name": "King of Cups",
-    "group": "cups",
-    "file": "cards/king-of-cups.png",
-    "thumb": "thumbs/king-of-cups.jpg"
-  },
-  {
-    "slug": "ace-of-swords",
-    "name": "Ace of Swords",
-    "group": "swords",
-    "file": "cards/ace-of-swords.png",
-    "thumb": "thumbs/ace-of-swords.jpg"
-  },
-  {
-    "slug": "two-of-swords",
-    "name": "Two of Swords",
-    "group": "swords",
-    "file": "cards/two-of-swords.png",
-    "thumb": "thumbs/two-of-swords.jpg"
-  },
-  {
-    "slug": "three-of-swords",
-    "name": "Three of Swords",
-    "group": "swords",
-    "file": "cards/three-of-swords.png",
-    "thumb": "thumbs/three-of-swords.jpg"
-  },
-  {
-    "slug": "four-of-swords",
-    "name": "Four of Swords",
-    "group": "swords",
-    "file": "cards/four-of-swords.png",
-    "thumb": "thumbs/four-of-swords.jpg"
-  },
-  {
-    "slug": "five-of-swords",
-    "name": "Five of Swords",
-    "group": "swords",
-    "file": "cards/five-of-swords.png",
-    "thumb": "thumbs/five-of-swords.jpg"
-  },
-  {
-    "slug": "six-of-swords",
-    "name": "Six of Swords",
-    "group": "swords",
-    "file": "cards/six-of-swords.png",
-    "thumb": "thumbs/six-of-swords.jpg"
-  },
-  {
-    "slug": "seven-of-swords",
-    "name": "Seven of Swords",
-    "group": "swords",
-    "file": "cards/seven-of-swords.png",
-    "thumb": "thumbs/seven-of-swords.jpg"
-  },
-  {
-    "slug": "eight-of-swords",
-    "name": "Eight of Swords",
-    "group": "swords",
-    "file": "cards/eight-of-swords.png",
-    "thumb": "thumbs/eight-of-swords.jpg"
-  },
-  {
-    "slug": "nine-of-swords",
-    "name": "Nine of Swords",
-    "group": "swords",
-    "file": "cards/nine-of-swords.png",
-    "thumb": "thumbs/nine-of-swords.jpg"
-  },
-  {
-    "slug": "ten-of-swords",
-    "name": "Ten of Swords",
-    "group": "swords",
-    "file": "cards/ten-of-swords.png",
-    "thumb": "thumbs/ten-of-swords.jpg"
-  },
-  {
-    "slug": "page-of-swords",
-    "name": "Page of Swords",
-    "group": "swords",
-    "file": "cards/page-of-swords.png",
-    "thumb": "thumbs/page-of-swords.jpg"
-  },
-  {
-    "slug": "knight-of-swords",
-    "name": "Knight of Swords",
-    "group": "swords",
-    "file": "cards/knight-of-swords.png",
-    "thumb": "thumbs/knight-of-swords.jpg"
-  },
-  {
-    "slug": "queen-of-swords",
-    "name": "Queen of Swords",
-    "group": "swords",
-    "file": "cards/queen-of-swords.png",
-    "thumb": "thumbs/queen-of-swords.jpg"
-  },
-  {
-    "slug": "king-of-swords",
-    "name": "King of Swords",
-    "group": "swords",
-    "file": "cards/king-of-swords.png",
-    "thumb": "thumbs/king-of-swords.jpg"
-  },
-  {
-    "slug": "ace-of-pentacles",
-    "name": "Ace of Pentacles",
-    "group": "pentacles",
-    "file": "cards/ace-of-pentacles.png",
-    "thumb": "thumbs/ace-of-pentacles.jpg"
-  },
-  {
-    "slug": "two-of-pentacles",
-    "name": "Two of Pentacles",
-    "group": "pentacles",
-    "file": "cards/two-of-pentacles.png",
-    "thumb": "thumbs/two-of-pentacles.jpg"
-  },
-  {
-    "slug": "three-of-pentacles",
-    "name": "Three of Pentacles",
-    "group": "pentacles",
-    "file": "cards/three-of-pentacles.png",
-    "thumb": "thumbs/three-of-pentacles.jpg"
-  },
-  {
-    "slug": "four-of-pentacles",
-    "name": "Four of Pentacles",
-    "group": "pentacles",
-    "file": "cards/four-of-pentacles.png",
-    "thumb": "thumbs/four-of-pentacles.jpg"
-  },
-  {
-    "slug": "five-of-pentacles",
-    "name": "Five of Pentacles",
-    "group": "pentacles",
-    "file": "cards/five-of-pentacles.png",
-    "thumb": "thumbs/five-of-pentacles.jpg"
-  },
-  {
-    "slug": "six-of-pentacles",
-    "name": "Six of Pentacles",
-    "group": "pentacles",
-    "file": "cards/six-of-pentacles.png",
-    "thumb": "thumbs/six-of-pentacles.jpg"
-  },
-  {
-    "slug": "seven-of-pentacles",
-    "name": "Seven of Pentacles",
-    "group": "pentacles",
-    "file": "cards/seven-of-pentacles.png",
-    "thumb": "thumbs/seven-of-pentacles.jpg"
-  },
-  {
-    "slug": "eight-of-pentacles",
-    "name": "Eight of Pentacles",
-    "group": "pentacles",
-    "file": "cards/eight-of-pentacles.png",
-    "thumb": "thumbs/eight-of-pentacles.jpg"
-  },
-  {
-    "slug": "nine-of-pentacles",
-    "name": "Nine of Pentacles",
-    "group": "pentacles",
-    "file": "cards/nine-of-pentacles.png",
-    "thumb": "thumbs/nine-of-pentacles.jpg"
-  },
-  {
-    "slug": "ten-of-pentacles",
-    "name": "Ten of Pentacles",
-    "group": "pentacles",
-    "file": "cards/ten-of-pentacles.png",
-    "thumb": "thumbs/ten-of-pentacles.jpg"
-  },
-  {
-    "slug": "page-of-pentacles",
-    "name": "Page of Pentacles",
-    "group": "pentacles",
-    "file": "cards/page-of-pentacles.png",
-    "thumb": "thumbs/page-of-pentacles.jpg"
-  },
-  {
-    "slug": "knight-of-pentacles",
-    "name": "Knight of Pentacles",
-    "group": "pentacles",
-    "file": "cards/knight-of-pentacles.png",
-    "thumb": "thumbs/knight-of-pentacles.jpg"
-  },
-  {
-    "slug": "queen-of-pentacles",
-    "name": "Queen of Pentacles",
-    "group": "pentacles",
-    "file": "cards/queen-of-pentacles.png",
-    "thumb": "thumbs/queen-of-pentacles.jpg"
-  },
-  {
-    "slug": "king-of-pentacles",
-    "name": "King of Pentacles",
-    "group": "pentacles",
-    "file": "cards/king-of-pentacles.png",
-    "thumb": "thumbs/king-of-pentacles.jpg"
+  const MEANINGS = {
+    "00-the-fool": "A fresh start and free movement, trusting the road before you can see it.",
+    "01-the-magician": "A beginning with every tool already laid out. Skill, focus, the nerve to start.",
+    "02-the-high-priestess": "Inner knowing that needs no proof. Patience, quiet, and secrets kept well.",
+    "03-the-empress": "Fertile ground. Creation, abundance, and the tending that makes things grow.",
+    "04-the-emperor": "Structure and solid ground. Authority, order, something built to last.",
+    "05-the-hierophant": "Counsel from above. Tradition, the teacher, and the longer view.",
+    "06-the-lovers": "A choice made by the heart. Union, the crossroads, and what you truly value.",
+    "07-the-chariot": "Forward motion by will. Two forces held in hand and the journey taken on.",
+    "08-strength": "Gentle power. The wild thing calmed, courage without force, endurance.",
+    "09-the-hermit": "Withdrawal and the inner lamp. Patient searching, wisdom found in quiet.",
+    "10-wheel-of-fortune": "The turn. Cycles, changing fortune, a wheel that will not stop for you.",
+    "11-justice": "Balance and truth. Cause and effect, the fair weighing, accountability.",
+    "12-the-hanged-one": "A willing pause. The view from upside down and the surrender that frees you.",
+    "13-death": "An ending that clears the ground. Transformation, the cut that makes room.",
+    "14-temperance": "Blending and flow. Healing, right measure, opposites mixed with patience.",
+    "15-the-devil": "Binding and desire. The material grip, what holds you, what you allow.",
+    "16-the-tower": "A sudden break. The false structure falls and the shock sets you free.",
+    "17-the-star": "Hope after the storm. Renewal, calm, and gentle faith restored.",
+    "18-the-moon": "Dream and the hidden. Intuition and illusion together on the night path.",
+    "19-the-sun": "Clarity and warmth. Plain joy, success seen out in the open.",
+    "20-judgement": "The call. Awakening, reckoning and renewal arriving together.",
+    "21-the-world": "The circle closed. Completion, wholeness, arrival, the four corners dancing.",
+
+    "ace-of-wands": "The first spark of will. New fire lit, energy offered, something begins.",
+    "two-of-wands": "Desire meets its first choice. Two paths weighed before you move.",
+    "three-of-wands": "The first return on effort. Growth in the work, the fire answering back.",
+    "four-of-wands": "Fire given structure. A steady pause where desire has ground to stand on.",
+    "five-of-wands": "Effort meeting resistance. The spark tested by struggle and clash.",
+    "six-of-wands": "Fire moving on with relief. Work recognised, harmony restored by action.",
+    "seven-of-wands": "The will standing alone. Effort under pressure, holding your position.",
+    "eight-of-wands": "Momentum. Swift action and mastery building through steady fire.",
+    "nine-of-wands": "Endurance under strain. The fire nearly full, desire close to its limit.",
+    "ten-of-wands": "The full load of the work. A cycle closed in heat and labour.",
+    "page-of-wands": "Young fire. A message of action, courage taking its first steps.",
+    "knight-of-wands": "Fire in pursuit. Drive with speed and appetite, out to meet the world.",
+    "queen-of-wands": "Mature fire held within. Creative will tended, warmth that steadies others.",
+    "king-of-wands": "Mature fire shown outward. Command of the work, authority that directs.",
+
+    "ace-of-cups": "The first seed of feeling. A cup offered, love and intuition beginning.",
+    "two-of-cups": "Two cups meeting. Feeling in balance, a choice made through the heart.",
+    "three-of-cups": "Connection bearing fruit. Shared feeling, the heart answered by others.",
+    "four-of-cups": "A still pool of feeling. A pause in the heart, connection held and examined.",
+    "five-of-cups": "Grief and the spilled cup. What is lost, and what remains once it is mourned.",
+    "six-of-cups": "Kindness exchanged. Harmony restored through memory and gentle care.",
+    "seven-of-cups": "Many images before the heart. Longing, dream, and the testing of desire.",
+    "eight-of-cups": "Feeling on the move. A steady leaving of what no longer answers.",
+    "nine-of-cups": "The heart near full. Feeling rich, satisfaction close enough to touch.",
+    "ten-of-cups": "Completion in love. The full cup, connection whole, the cycle closed.",
+    "page-of-cups": "The young heart. A message of feeling, intuition learning its language.",
+    "knight-of-cups": "Feeling in pursuit. Love carried forward to meet the world.",
+    "queen-of-cups": "The mature heart. Depth understood, held with care, offered to others.",
+    "king-of-cups": "Mature feeling shown outward. Steady authority in love and care.",
+
+    "ace-of-swords": "The first clear thought. A true word offered, the mind begins its cut.",
+    "two-of-swords": "Two thoughts in tension. Balance held before the word is spoken.",
+    "three-of-swords": "Clarity with a cost. Words that reveal the pain they name.",
+    "four-of-swords": "Rest after conflict. Thought held still long enough to settle.",
+    "five-of-swords": "Conflict in the mind. A victory that costs more than it gives.",
+    "six-of-swords": "The mind moving on. Relief after conflict, clarity toward calmer ground.",
+    "seven-of-swords": "Strategy or evasion. Working around a thing rather than through it.",
+    "eight-of-swords": "The pattern tightening. Seeing the bind clearly is the way out of it.",
+    "nine-of-swords": "Worry at its heaviest. Truth pressing hard in the small hours.",
+    "ten-of-swords": "A hard ending. Truth at its limit and the cycle closed.",
+    "page-of-swords": "The young mind. A message of truth, words learning their edge.",
+    "knight-of-swords": "Thought in pursuit. Decision with speed and force.",
+    "queen-of-swords": "Mature thought held within. Clarity that protects its own boundary.",
+    "king-of-swords": "Mature thought shown outward. Authority through judgement and clear speech.",
+
+    "ace-of-pentacles": "The first solid seed. Body, money or work offered in usable form.",
+    "two-of-pentacles": "Two practical needs juggled. Money, body and work held in motion.",
+    "three-of-pentacles": "Work taking form. The first visible result of skill and cooperation.",
+    "four-of-pentacles": "A firm hold. Resources protected, the foundation kept in place.",
+    "five-of-pentacles": "Strain in the material world. Loss in body, money or home, felt plainly.",
+    "six-of-pentacles": "Resources shared. Relief moving between hands, the exchange made fair.",
+    "seven-of-pentacles": "The test of patience. Effort reviewed while the results take their time.",
+    "eight-of-pentacles": "Steady labour. Mastery building, the world shaped by repetition.",
+    "nine-of-pentacles": "Comfort earned. Body, home and money held with quiet strength.",
+    "ten-of-pentacles": "Completion in solid form. Home, wealth, inheritance, the cycle closed.",
+    "page-of-pentacles": "The young worker. Study and first steps in body, money or craft.",
+    "knight-of-pentacles": "Patient progress. Steady pursuit of work, health or money.",
+    "queen-of-pentacles": "Mature earth held within. Body and home understood, care made practical.",
+    "king-of-pentacles": "Mature earth shown outward. Command of work, money and home."
+  };
+
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const selectorsEl = document.getElementById("selectors");
+  const gridEl = document.getElementById("grid");
+  const spreadButtons = Array.from(document.querySelectorAll(".spread button"));
+
+  const W = 1080, H = 1920;
+  const LAYOUT = {
+    1: { cardW: 470, gap: 0,  top: 250, nameSize: 44, textSize: 34 },
+    3: { cardW: 306, gap: 24, top: 330, nameSize: 36, textSize: 29 },
+    5: { cardW: 186, gap: 14, top: 420, nameSize: 30, textSize: 25 }
+  };
+
+  let cards = [];
+  let count = 1;
+  let picks = [];
+  const imageCache = new Map();
+
+  function loadImage(src) {
+    if (imageCache.has(src)) return imageCache.get(src);
+    const p = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Could not load " + src));
+      img.src = src;
+    });
+    imageCache.set(src, p);
+    return p;
   }
-];
-    const card1 = document.querySelector("#card1");
-    const card2 = document.querySelector("#card2");
-    const card2Label = document.querySelector("#card2Label");
-    const singleBtn = document.querySelector("#singleBtn");
-    const doubleBtn = document.querySelector("#doubleBtn");
-    const randomBtn = document.querySelector("#randomBtn");
-    const downloadBtn = document.querySelector("#downloadBtn");
-    const canvas = document.querySelector("#canvas");
-    const ctx = canvas.getContext("2d");
-    let spread = 1;
 
-    function option(card) {
-      const opt = document.createElement("option");
-      opt.value = card.file;
-      opt.textContent = card.name;
-      return opt;
-    }
-
-    function loadImage(src) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = src;
+  function buildSelectors() {
+    selectorsEl.innerHTML = "";
+    for (let i = 0; i < count; i++) {
+      const label = document.createElement("label");
+      label.setAttribute("for", "card" + i);
+      label.textContent = count === 1 ? "Card" : "Card " + (i + 1);
+      const select = document.createElement("select");
+      select.id = "card" + i;
+      cards.forEach((card, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = card.name;
+        select.appendChild(opt);
       });
-    }
-
-    function fillSelects() {
-      cards.forEach(card => {
-        card1.append(option(card));
-        card2.append(option(card));
+      select.value = String(picks[i] != null ? picks[i] : i);
+      select.addEventListener("change", () => {
+        picks[i] = Number(select.value);
+        render();
       });
-      card2.selectedIndex = 1;
+      selectorsEl.appendChild(label);
+      selectorsEl.appendChild(select);
     }
+  }
 
-    function setSpread(next) {
-      spread = next;
-      singleBtn.setAttribute("aria-pressed", String(next === 1));
-      doubleBtn.setAttribute("aria-pressed", String(next === 2));
-      card2.hidden = next === 1;
-      card2Label.hidden = next === 1;
-      draw();
+  function setCount(next) {
+    count = next;
+    spreadButtons.forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.count) === count)));
+    picks = picks.slice(0, count);
+    while (picks.length < count) {
+      let idx = Math.floor(Math.random() * cards.length);
+      let guard = 0;
+      while (picks.includes(idx) && guard++ < 200) idx = Math.floor(Math.random() * cards.length);
+      picks.push(idx);
     }
+    buildSelectors();
+    render();
+  }
 
-    function drawFrame() {
-      const grad = ctx.createRadialGradient(540, 120, 20, 540, 900, 1250);
-      grad.addColorStop(0, "#16443e");
-      grad.addColorStop(1, "#062522");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 1080, 1920);
-      ctx.strokeStyle = "rgba(216,182,110,.62)";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(54, 54, 972, 1812);
-      ctx.strokeStyle = "rgba(216,182,110,.28)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(78, 78, 924, 1764);
+  function randomise() {
+    const pool = cards.map((_, i) => i);
+    picks = [];
+    for (let i = 0; i < count; i++) {
+      const j = Math.floor(Math.random() * pool.length);
+      picks.push(pool.splice(j, 1)[0]);
     }
+    buildSelectors();
+    render();
+  }
 
-    function drawCard(img, x, y, w, h) {
+  function wrap(text, maxWidth) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let line = "";
+    for (const word of words) {
+      const test = line ? line + " " + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  async function render() {
+    const chosen = picks.slice(0, count).map(i => cards[i]).filter(Boolean);
+    if (!chosen.length) return;
+    const L = LAYOUT[count];
+
+    const bg = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, 1500);
+    bg.addColorStop(0, "#16443e");
+    bg.addColorStop(1, "#062522");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#d8b66e";
+    ctx.font = "44px Georgia, 'Times New Roman', serif";
+    ctx.fillText("BFH Muse Tarot", W / 2, 130);
+
+    const cardW = L.cardW;
+    const cardH = Math.round(cardW * (1020 / 600));
+    const totalW = chosen.length * cardW + (chosen.length - 1) * L.gap;
+    const startX = (W - totalW) / 2;
+
+    const images = await Promise.all(chosen.map(c => loadImage(c.file).catch(() => null)));
+    images.forEach((img, i) => {
+      const cx = startX + i * (cardW + L.gap);
       ctx.save();
       ctx.shadowColor = "rgba(0,0,0,.55)";
-      ctx.shadowBlur = 34;
-      ctx.shadowOffsetY = 20;
-      ctx.drawImage(img, x, y, w, h);
-      ctx.restore();
-    }
-
-    async function draw() {
-      drawFrame();
-      const first = await loadImage(card1.value);
-      if (spread === 1) {
-        drawCard(first, 200, 310, 680, 1156);
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetY = 10;
+      if (img) {
+        ctx.drawImage(img, cx, L.top, cardW, cardH);
       } else {
-        const second = await loadImage(card2.value);
-        drawCard(first, 92, 555, 430, 731);
-        drawCard(second, 558, 555, 430, 731);
+        ctx.fillStyle = "#0d332f";
+        ctx.fillRect(cx, L.top, cardW, cardH);
       }
-    }
+      ctx.restore();
+      ctx.strokeStyle = "rgba(216,182,110,.55)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(cx, L.top, cardW, cardH);
+    });
 
-    function randomise() {
-      card1.selectedIndex = Math.floor(Math.random() * cards.length);
-      card2.selectedIndex = Math.floor(Math.random() * cards.length);
-      if (spread === 2 && card1.selectedIndex === card2.selectedIndex) {
-        card2.selectedIndex = (card2.selectedIndex + 1) % cards.length;
-      }
-      draw();
-    }
+    const cardsBottom = L.top + cardH;
+    const boxTop = cardsBottom + 60;
+    const boxBottom = H - 90;
+    const boxX = 70;
+    const boxW = W - boxX * 2;
 
-    function download() {
-      const names = [card1.options[card1.selectedIndex].textContent];
-      if (spread === 2) names.push(card2.options[card2.selectedIndex].textContent);
-      const a = document.createElement("a");
-      a.download = names.join("-").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + ".png";
-      a.href = canvas.toDataURL("image/png");
-      a.click();
-    }
+    ctx.fillStyle = "rgba(8,42,38,.88)";
+    roundRect(boxX, boxTop, boxW, boxBottom - boxTop, 18);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(216,182,110,.45)";
+    ctx.lineWidth = 2;
+    roundRect(boxX, boxTop, boxW, boxBottom - boxTop, 18);
+    ctx.stroke();
 
-    function makeGrid() {
-      const grid = document.querySelector("#grid");
-      cards.forEach(card => {
-        const button = document.createElement("button");
-        button.className = "card-tile";
-        button.type = "button";
-        button.innerHTML = `<img src="${card.thumb}" alt="">${card.name}`;
-        button.addEventListener("click", () => {
-          card1.value = card.file;
-          draw();
-          scrollTo({ top: 0, behavior: "smooth" });
-        });
-        grid.append(button);
+    const innerW = boxW - 90;
+    const blocks = chosen.map(card => {
+      ctx.font = L.textSize + "px Georgia, 'Times New Roman', serif";
+      return { name: card.name, lines: wrap(MEANINGS[card.slug] || "", innerW) };
+    });
+
+    const lineGap = Math.round(L.textSize * 1.35);
+    const blockHeights = blocks.map(b => L.nameSize + 14 + b.lines.length * lineGap);
+    const totalTextH = blockHeights.reduce((a, b) => a + b, 0);
+    const spare = (boxBottom - boxTop) - totalTextH;
+    const pad = Math.max(20, spare / (blocks.length + 1));
+
+    let y = boxTop + pad;
+    blocks.forEach(block => {
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#d8b66e";
+      ctx.font = L.nameSize + "px Georgia, 'Times New Roman', serif";
+      ctx.fillText(block.name, W / 2, y + L.nameSize);
+      y += L.nameSize + 14;
+
+      ctx.fillStyle = "#f8ecd5";
+      ctx.font = L.textSize + "px Georgia, 'Times New Roman', serif";
+      block.lines.forEach(line => {
+        ctx.fillText(line, W / 2, y + L.textSize);
+        y += lineGap;
       });
-    }
+      y += pad;
+    });
+  }
 
-    singleBtn.addEventListener("click", () => setSpread(1));
-    doubleBtn.addEventListener("click", () => setSpread(2));
-    randomBtn.addEventListener("click", randomise);
-    downloadBtn.addEventListener("click", download);
-    card1.addEventListener("change", draw);
-    card2.addEventListener("change", draw);
+  function buildGrid() {
+    gridEl.innerHTML = "";
+    cards.forEach(card => {
+      const tile = document.createElement("div");
+      tile.className = "card-tile";
+      const img = document.createElement("img");
+      img.src = card.thumb;
+      img.alt = card.name;
+      img.loading = "lazy";
+      tile.appendChild(img);
+      tile.appendChild(document.createTextNode(card.name));
+      gridEl.appendChild(tile);
+    });
+  }
 
-    fillSelects();
-    makeGrid();
-    setSpread(1);
+  document.getElementById("randomBtn").addEventListener("click", randomise);
+  document.getElementById("downloadBtn").addEventListener("click", () => {
+    const names = picks.slice(0, count).map(i => cards[i] && cards[i].slug).join("_");
+    const link = document.createElement("a");
+    link.download = "bfh-muse-tarot_" + names + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+  spreadButtons.forEach(btn => {
+    btn.addEventListener("click", () => setCount(Number(btn.dataset.count)));
+  });
+
+  fetch("cards.json")
+    .then(r => r.json())
+    .then(data => {
+      cards = data;
+      buildGrid();
+      setCount(1);
+    });
   </script>
 </body>
 </html>
