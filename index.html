@@ -4,24 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BFH Muse Tarot</title>
+  <meta name="theme-color" content="#0e0720">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #062522;
-      --panel: #0d332f;
-      --gold: #d8b66e;
-      --cream: #f8ecd5;
-      --muted: #b8aa8c;
-      font-family: Georgia, "Times New Roman", serif;
+      --gold: #c9a84c;
+      --gold2: #e8c96a;
+      --mist: #e8dff5;
+      --lav: #c4aae8;
+      --cream: #e8dff5;
+      --muted: #c4aae8;
+      font-family: 'Cormorant Garamond', Georgia, serif;
     }
     * { box-sizing: border-box; }
+    html { font-size: 18px; background: #05030f; }
     body {
       margin: 0;
-      background: radial-gradient(circle at 50% 0%, #16443e 0, var(--bg) 42rem);
-      color: var(--cream);
+      background: radial-gradient(ellipse at 40% 20%, #1e0a3a 0%, #0e0720 45%, #05030f 100%) fixed;
+      color: var(--mist);
       min-height: 100vh;
+      line-height: 1.6;
     }
+    #sky { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .s { position: absolute; border-radius: 50%; background: #fff; animation: tw var(--d) ease-in-out infinite var(--dl); }
+    @keyframes tw { 0%, 100% { opacity: .08; } 50% { opacity: .9; } }
     main {
+      position: relative; z-index: 1;
       max-width: 1180px;
       margin: 0 auto;
       padding: 28px 18px 48px;
@@ -30,40 +41,59 @@
       gap: 22px;
     }
     h1 {
-      font-size: 28px;
-      line-height: 1.05;
+      font-family: 'Cinzel Decorative', Georgia, serif;
+      font-weight: 400;
+      font-size: 1.5rem;
+      line-height: 1.25;
+      letter-spacing: 0.03em;
       margin: 0 0 18px;
-      color: var(--gold);
+      color: var(--gold2);
+      text-shadow: 0 0 28px rgba(200, 168, 76, 0.5), 0 0 60px rgba(140, 60, 200, 0.3);
     }
     .controls, .preview {
-      border: 1px solid rgba(216, 182, 110, .35);
-      background: rgba(8, 42, 38, .88);
-      border-radius: 8px;
+      border: 1px solid rgba(201, 168, 76, 0.28);
+      background: linear-gradient(160deg, rgba(52, 34, 94, 0.55) 0%, rgba(26, 17, 56, 0.65) 100%);
+      border-radius: 12px;
       padding: 16px;
+      box-shadow: 0 18px 50px rgba(10, 4, 24, 0.55);
     }
-    label { display: block; color: var(--muted); font-size: 14px; margin: 14px 0 7px; }
+    label {
+      display: block; margin: 14px 0 7px;
+      font-family: 'Cinzel', serif; font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--lav);
+    }
     select, button {
       width: 100%;
-      border-radius: 6px;
-      border: 1px solid rgba(216, 182, 110, .55);
-      background: #09201e;
-      color: var(--cream);
+      border-radius: 10px;
+      border: 1px solid rgba(201, 168, 76, 0.5);
+      background: rgba(5, 3, 15, 0.5);
+      color: var(--mist);
       padding: 11px 12px;
       font: inherit;
     }
+    select { font-size: 1.05rem; }
     .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-    button { cursor: pointer; color: #061c1a; background: var(--gold); font-weight: 700; }
-    button.secondary { background: transparent; color: var(--gold); }
+    button {
+      cursor: pointer; min-height: 44px;
+      font-family: 'Cinzel', serif; font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border-radius: 24px; border: 1px solid rgba(201, 168, 76, 0.75);
+      background: rgba(201, 168, 76, 0.18); color: var(--gold2);
+      transition: all 0.25s ease;
+    }
+    button:hover { background: rgba(201, 168, 76, 0.28); box-shadow: 0 0 14px rgba(201, 168, 76, 0.18); }
+    button.secondary { background: rgba(201, 168, 76, 0.05); border-color: rgba(201, 168, 76, 0.35); color: var(--gold2); }
     .spread { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-    .spread button[aria-pressed="true"] { background: var(--gold); color: #061c1a; }
-    .spread button[aria-pressed="false"] { background: transparent; color: var(--gold); }
+    .spread button[aria-pressed="true"] { background: rgba(201, 168, 76, 0.18); border-color: rgba(201, 168, 76, 0.75); color: var(--gold2); }
+    .spread button[aria-pressed="false"] { background: rgba(201, 168, 76, 0.05); border-color: rgba(201, 168, 76, 0.35); color: var(--gold2); }
     canvas {
       width: min(100%, 420px);
       aspect-ratio: 9 / 16;
       display: block;
       margin: 0 auto;
-      border: 1px solid rgba(216, 182, 110, .35);
-      background: #062522;
+      border: 1px solid rgba(201, 168, 76, 0.4);
+      border-radius: 10px;
+      background: #0e0720;
     }
     .grid {
       grid-column: 1 / -1;
@@ -72,17 +102,18 @@
       gap: 12px;
     }
     .card-tile {
-      border: 1px solid rgba(216, 182, 110, .25);
-      border-radius: 7px;
+      border: 1px solid rgba(201, 168, 76, 0.4);
+      border-radius: 10px;
       padding: 6px;
-      background: rgba(9, 32, 30, .8);
-      color: var(--cream);
+      background: linear-gradient(160deg, #34225e 0%, #261a4a 60%, #1a1138 100%);
+      color: var(--gold2);
       min-height: 178px;
       text-align: center;
-      font-size: 12px;
-      line-height: 1.15;
+      font-family: 'Cinzel', serif; font-weight: 600;
+      font-size: 0.5rem; letter-spacing: 0.08em; text-transform: uppercase;
+      line-height: 1.3;
     }
-    .card-tile img { width: 100%; display: block; border-radius: 4px; margin-bottom: 6px; }
+    .card-tile img { width: 100%; display: block; border-radius: 6px; margin-bottom: 6px; }
     @media (max-width: 860px) {
       main { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
@@ -93,39 +124,39 @@
     #bfh-gate {
       position: fixed; inset: 0; z-index: 9999;
       display: grid; place-items: center; padding: 24px;
-      background: radial-gradient(circle at 50% 12%, #16443e 0, #062522 38rem);
+      background: radial-gradient(ellipse at 40% 20%, #1e0a3a 0%, #0e0720 45%, #05030f 100%);
     }
     #bfh-gate-form {
       width: min(100%, 360px); text-align: center;
-      border: 1px solid rgba(216, 182, 110, .35);
-      background: rgba(8, 42, 38, .92);
-      border-radius: 10px; padding: 34px 26px 28px;
+      background: linear-gradient(160deg, #382560 0%, #281c4e 60%, #1c133a 100%);
+      border: 1px solid var(--gold); border-radius: 18px;
+      box-shadow: 0 0 40px rgba(201, 168, 76, .25), 0 18px 50px rgba(0, 0, 0, .55);
+      padding: 30px 26px 28px;
     }
-    .bfh-gate-mark {
-      margin: 0 0 14px; letter-spacing: .38em; text-indent: .38em;
-      font-size: 13px; color: var(--gold); opacity: .8;
-    }
-    #bfh-gate h1 { font-size: 26px; margin: 0 0 10px; color: var(--gold); }
-    .bfh-gate-sub { margin: 0 0 20px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+    .bfh-gate-mark { display: block; width: 96px; height: 96px; margin: 0 auto 16px; }
+    #bfh-gate h1 { font-size: 1.3rem; margin: 0 0 10px; }
+    .bfh-gate-sub { margin: 0 0 20px; font-size: 1rem; font-style: italic; color: rgba(228, 220, 245, 0.82); line-height: 1.45; }
     #bfh-gate input {
-      width: 100%; border-radius: 6px; padding: 12px;
-      border: 1px solid rgba(216, 182, 110, .55);
-      background: #09201e; color: var(--cream); font: inherit;
-      text-align: center; letter-spacing: .12em;
+      width: 100%; border-radius: 10px; padding: 12px;
+      border: 1px solid rgba(201, 168, 76, .5);
+      background: rgba(5, 3, 15, .5); color: var(--mist);
+      font-family: 'Cinzel', serif; font-size: .95rem;
+      text-align: center; letter-spacing: .08em; outline: none;
     }
+    #bfh-gate input:focus { border-color: var(--gold2); }
     #bfh-gate button {
-      width: 100%; margin-top: 12px; border-radius: 6px; padding: 12px;
-      border: 1px solid rgba(216, 182, 110, .55);
-      background: var(--gold); color: #061c1a; font: inherit; font-weight: 700;
-      cursor: pointer;
+      width: 100%; margin-top: 12px; border: none; border-radius: 999px; padding: 12px;
+      background: linear-gradient(160deg, #e8c96a 0%, #c9a84c 100%); color: #1c133a;
+      font-size: .7rem; letter-spacing: .14em;
     }
-    .bfh-gate-error { margin: 14px 0 0; font-size: 13px; color: #f0b6a4; }
+    .bfh-gate-error { margin: 14px 0 0; font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .1em; color: #e6b8d0; }
   </style>
 </head>
 <body>
+  <div id="sky" aria-hidden="true"></div>
   <div id="bfh-gate" role="dialog" aria-modal="true" aria-labelledby="bfh-gate-title">
     <form id="bfh-gate-form" autocomplete="off">
-      <p class="bfh-gate-mark">BFH</p>
+      <img class="bfh-gate-mark" src="b-logo.png" alt="">
       <h1 id="bfh-gate-title">BFH Muse Tarot</h1>
       <p class="bfh-gate-sub">This deck is private. Enter the passcode to continue.</p>
       <input id="bfh-gate-input" type="password" inputmode="text" autocomplete="off"
@@ -387,21 +418,38 @@
     ctx.closePath();
   }
 
+  const TEXT_FONT = L => "italic " + Math.round(L.textSize * 1.14) + "px 'Cormorant Garamond', Georgia, serif";
+
   async function render() {
     const chosen = picks.slice(0, count).map(i => cards[i]).filter(Boolean);
     if (!chosen.length) return;
     const L = LAYOUT[count];
 
-    const bg = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, 1500);
-    bg.addColorStop(0, "#16443e");
-    bg.addColorStop(1, "#062522");
+    const bg = ctx.createRadialGradient(W * 0.4, H * 0.2, 0, W * 0.4, H * 0.2, 1500);
+    bg.addColorStop(0, "#1e0a3a");
+    bg.addColorStop(0.45, "#0e0720");
+    bg.addColorStop(1, "#05030f");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
+    let seed = 20261007;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 170; i++) {
+      ctx.globalAlpha = 0.25 + rnd() * 0.65;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(rnd() * W, rnd() * H, 0.8 + rnd() * 1.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#d8b66e";
-    ctx.font = "44px Georgia, 'Times New Roman', serif";
+    ctx.fillStyle = "#e8c96a";
+    ctx.font = "46px 'Cinzel Decorative', Georgia, serif";
+    ctx.save();
+    ctx.shadowColor = "rgba(200,168,76,.5)";
+    ctx.shadowBlur = 28;
     ctx.fillText("BFH Muse Tarot", W / 2, 130);
+    ctx.restore();
 
     const cardW = L.cardW;
     const cardH = Math.round(cardW * (1020 / 600));
@@ -418,11 +466,11 @@
       if (img) {
         ctx.drawImage(img, cx, L.top, cardW, cardH);
       } else {
-        ctx.fillStyle = "#0d332f";
+        ctx.fillStyle = "#261a4a";
         ctx.fillRect(cx, L.top, cardW, cardH);
       }
       ctx.restore();
-      ctx.strokeStyle = "rgba(216,182,110,.55)";
+      ctx.strokeStyle = "rgba(201,168,76,.6)";
       ctx.lineWidth = 3;
       ctx.strokeRect(cx, L.top, cardW, cardH);
     });
@@ -433,17 +481,20 @@
     const boxX = 70;
     const boxW = W - boxX * 2;
 
-    ctx.fillStyle = "rgba(8,42,38,.88)";
+    const boxFill = ctx.createLinearGradient(boxX, boxTop, boxX + boxW, boxBottom);
+    boxFill.addColorStop(0, "rgba(52,34,94,.72)");
+    boxFill.addColorStop(1, "rgba(26,17,56,.8)");
+    ctx.fillStyle = boxFill;
     roundRect(boxX, boxTop, boxW, boxBottom - boxTop, 18);
     ctx.fill();
-    ctx.strokeStyle = "rgba(216,182,110,.45)";
+    ctx.strokeStyle = "rgba(201,168,76,.45)";
     ctx.lineWidth = 2;
     roundRect(boxX, boxTop, boxW, boxBottom - boxTop, 18);
     ctx.stroke();
 
     const innerW = boxW - 90;
     const blocks = chosen.map(card => {
-      ctx.font = L.textSize + "px Georgia, 'Times New Roman', serif";
+      ctx.font = TEXT_FONT(L);
       return { name: card.name, lines: wrap(MEANINGS[card.slug] || "", innerW) };
     });
 
@@ -456,13 +507,15 @@
     let y = boxTop + pad;
     blocks.forEach(block => {
       ctx.textAlign = "center";
-      ctx.fillStyle = "#d8b66e";
-      ctx.font = L.nameSize + "px Georgia, 'Times New Roman', serif";
-      ctx.fillText(block.name, W / 2, y + L.nameSize);
+      ctx.fillStyle = "#e8c96a";
+      ctx.font = "600 " + Math.round(L.nameSize * 0.86) + "px 'Cinzel', Georgia, serif";
+      ctx.letterSpacing = "3px";
+      ctx.fillText(block.name.toUpperCase(), W / 2, y + L.nameSize);
+      ctx.letterSpacing = "0px";
       y += L.nameSize + 14;
 
-      ctx.fillStyle = "#f8ecd5";
-      ctx.font = L.textSize + "px Georgia, 'Times New Roman', serif";
+      ctx.fillStyle = "#e8dff5";
+      ctx.font = TEXT_FONT(L);
       block.lines.forEach(line => {
         ctx.fillText(line, W / 2, y + L.textSize);
         y += lineGap;
@@ -484,6 +537,24 @@
       tile.appendChild(document.createTextNode(card.name));
       gridEl.appendChild(tile);
     });
+  }
+
+  (function () {
+    const sky = document.getElementById("sky"), f = document.createDocumentFragment();
+    for (let i = 0; i < 120; i++) {
+      const st = document.createElement("div"), sz = Math.random() * 2 + 0.4;
+      st.className = "s";
+      st.style.cssText = "width:" + sz + "px;height:" + sz + "px;top:" + Math.random() * 100 + "%;left:" + Math.random() * 100 + "%;--d:" + (Math.random() * 5 + 2) + "s;--dl:" + Math.random() * 7 + "s";
+      f.appendChild(st);
+    }
+    sky.appendChild(f);
+  })();
+  if (document.fonts && document.fonts.load) {
+    Promise.all([
+      document.fonts.load("46px 'Cinzel Decorative'"),
+      document.fonts.load("600 40px 'Cinzel'"),
+      document.fonts.load("italic 40px 'Cormorant Garamond'")
+    ]).then(() => render()).catch(() => {});
   }
 
   document.getElementById("randomBtn").addEventListener("click", randomise);
