@@ -120,6 +120,21 @@
       line-height: 1.3;
     }
     .card-tile img { width: 100%; display: block; border-radius: 6px; margin-bottom: 6px; }
+    .about {
+      grid-column: 1 / -1;
+      border: 1px solid rgba(201, 168, 76, 0.28);
+      background: linear-gradient(160deg, rgba(52, 34, 94, 0.55) 0%, rgba(26, 17, 56, 0.65) 100%);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 1.05rem;
+    }
+    .about h2 {
+      font-family: 'Cinzel Decorative', Georgia, serif; font-weight: 400;
+      font-size: 1.1rem; letter-spacing: 0.03em; margin: 0 0 10px; color: var(--gold2);
+    }
+    .about p { margin: 0 0 6px; }
+    .about ol { margin: 0 0 12px; padding-left: 1.4rem; }
+    .about ol:last-child { margin-bottom: 0; }
     @media (max-width: 860px) {
       main { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
@@ -230,6 +245,21 @@
       <canvas id="canvas" width="1080" height="1920"></canvas>
     </section>
     <section class="grid" id="grid"></section>
+    <section class="about">
+      <h2>Save to your home screen</h2>
+      <p>On an iPhone, in Safari:</p>
+      <ol>
+        <li>Tap the Share button, the square with an arrow pointing up. If it is not showing, tap the three dots first.</li>
+        <li>Tap "Add to Home Screen".</li>
+        <li>Tap "Add".</li>
+      </ol>
+      <p>On an Android phone, in Chrome:</p>
+      <ol>
+        <li>Tap the three dots at the top right.</li>
+        <li>Tap "Add to Home screen".</li>
+        <li>Tap "Add".</li>
+      </ol>
+    </section>
   </main>
 
   <script>
