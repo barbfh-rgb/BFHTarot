@@ -136,7 +136,7 @@
   </div>
   <script>
   (function () {
-    var HASH = "dcedc53848aa73858884c5dd5f496592f68d1d129dfcc9adf4f3ecb3a973c5f6";
+    var HASH = "f569ea2b25797478297d4203ce0a8cb719184487195309b82537b3843424ac93";
     var KEY = "bfh-muse-tarot-unlocked";
     var gate = document.getElementById("bfh-gate");
     var form = document.getElementById("bfh-gate-form");
@@ -159,7 +159,7 @@
 
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
-      var value = input.value.trim();
+      var value = input.value.trim().toLowerCase();
       var digest = "";
       try { digest = await sha256(value); } catch (e2) { digest = ""; }
       if (digest === HASH) {
